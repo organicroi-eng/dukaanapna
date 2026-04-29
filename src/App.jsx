@@ -7,15 +7,15 @@ const SUPA_URL = "https://dsoydsncwltjyvhakwvn.supabase.co"
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzb3lkc25jd2x0anl2aGFrd3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MTkzOTgsImV4cCI6MjA5Mjk5NTM5OH0.hIe-gbqhcJ_H0VHPbqxNhYPNMPLfy86ggky-mUqjQ1c"
 async function postDealToSupabase(row) {
   try {
-    await fetch(SUPA_URL + "/rest/v1/buyer_deals", {
+    await fetch(SUPA_URL + "/rest/v1/rpc/insert_buyer_deal", {
       method: "POST",
       headers: {
         "apikey": SUPA_KEY,
         "Authorization": "Bearer " + SUPA_KEY,
         "Content-Type": "application/json",
-        "Prefer": "return=minimal"
+        
       },
-      body: JSON.stringify(row)
+      body: JSON.stringify({data: row})
     })
   } catch(e) { console.error("Supabase error:", e) }
 }
@@ -38,6 +38,44 @@ const C = {
   muted:"#9a3412", cream:"#fef3e2", cream2:"#fde8c0",
   white:"#ffffff", green:"#16a34a", red:"#dc2626", blue:"#2563eb"
 }
+
+
+// ─── SUPABASE LISTINGS LOADER ─────────────────────────────────────────────────
+const SUPA_URL_READ = "https://dsoydsncwltjyvhakwvn.supabase.co"
+const SUPA_READ_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzb3lkc25jd2x0anl2aGFrd3ZuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzQxOTM5OCwiZXhwIjoyMDkyOTk1Mzk4fQ.dFh6m3Pta8szesWEBimUJVV1i3xPAniHZmXqFZcOtgU"
+
+async function fetchListings() {
+  try {
+    const res = await fetch(
+      SUPA_URL_READ + "/rest/v1/seller_leads?published_dukaanapna=eq.true&select=*&order=created_at.desc",
+      { headers: { "apikey": SUPA_READ_KEY, "Authorization": "Bearer " + SUPA_READ_KEY } }
+    )
+    const rows = await res.json()
+    if (!Array.isArray(rows)) return []
+    return rows.map((r, i) => ({
+      id: r.id,
+      type: r.type || "Gas Station",
+      icon: {"Gas Station":"⛽","Convenience Store":"🏪","Smoke Shop":"💨","Liquor Store":"🍷"}[r.type] || "🏢",
+      name: r.listing_name || (r.first_name + " " + r.last_name + "\'s " + r.type),
+      city: (r.address || "").split(",")[1]?.trim() || "USA",
+      state: (r.address || "").split(",")[2]?.trim().split(" ")[1] || "US",
+      askingPrice: Number(r.asking_price) || 0,
+      monthlyRevenue: Number(r.monthly_revenue) || 0,
+      ownership: r.details || "",
+      reason: r.reason || "",
+      daysListed: r.days_listed || Math.floor((Date.now() - new Date(r.created_at)) / 86400000),
+      featured: i < 3,
+      desc: r.details || ("This " + r.type + " is available for acquisition. Contact Veribas Real Estate LLC for full details."),
+      brand: r.details?.split("·")[0]?.trim() || "",
+      address: r.address || "",
+      enviro: "No known issues",
+    }))
+  } catch(e) {
+    console.error("Error loading listings:", e)
+    return []
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const LISTINGS = [
@@ -616,6 +654,13 @@ export default function DukaanApna() {
   const cols=isMobile?1:isTablet?2:3
 
   const [view,setView]=useState("browse")
+  const [LISTINGS, setLISTINGS]=useState([])
+  const [listingsLoading, setListingsLoading]=useState(true)
+  useEffect(()=>{
+    fetchListings().then(data=>{ setLISTINGS(data); setListingsLoading(false) })
+    const interval = setInterval(()=>fetchListings().then(setLISTINGS), 30000)
+    return ()=>clearInterval(interval)
+  },[])
   const [displayMode,setDisplayMode]=useState("grid")
   const [filters,setFilters]=useState({type:"",state:"",maxPrice:""})
   const [search,setSearch]=useState("")
