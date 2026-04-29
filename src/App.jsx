@@ -308,6 +308,23 @@ function FinancingPanel({l}) {
 }
 
 // ─── OFFER FORM ───────────────────────────────────────────────────────────────
+function BrokerDisclosure({offerPrice}) {
+  const fee = offerPrice ? Math.round(Number(String(offerPrice).replace(/[^0-9]/g,"")) * 0.05) : null
+  return (
+    <div style={{background:"rgba(249,115,22,0.08)",border:"1px solid rgba(249,115,22,0.25)",borderRadius:8,padding:"12px 14px",marginBottom:16}}>
+      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#f97316",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>🏢 Represented by Veribas Real Estate LLC</div>
+      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#c2410c",lineHeight:1.6}}>
+        Veribas Real Estate LLC is a licensed business broker. By submitting this offer, you engage Veribas as your <strong>buyer's agent (client representation)</strong>. The seller is represented as a customer.
+      </div>
+      <div style={{marginTop:8,padding:"8px 10px",background:"rgba(249,115,22,0.1)",borderRadius:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#c2410c",fontWeight:600}}>Buyer Broker Fee (5%)</span>
+        <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700,color:"#f97316"}}>{fee ? "$"+fee.toLocaleString() : "5% of purchase price"}</span>
+      </div>
+      {fee && <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#9a3412",marginTop:4}}>Total buyer cost: ${(Number(String(offerPrice).replace(/[^0-9]/g,""))+fee).toLocaleString()}</div>}
+    </div>
+  )
+}
+
 function OfferForm({l,user,onSubmit,existingOffer}) {
   const [form,setForm]=useState({offerPrice:"",downPayment:"",financing:"SBA 7(a)",timeline:"",contingencies:"",message:""})
   const [done,setDone]=useState(!!existingOffer)
