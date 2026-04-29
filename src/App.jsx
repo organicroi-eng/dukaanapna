@@ -1,6 +1,26 @@
 import { useState, useEffect, useCallback } from "react"
 
 // ─── RESPONSIVE HOOK ─────────────────────────────────────────────────────────
+
+// ── Supabase helper ──────────────────────────────────────────
+const SUPA_URL = "https://dsoydsncwltjyvhakwvn.supabase.co"
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzb3lkc25jd2x0anl2aGFrd3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MTkzOTgsImV4cCI6MjA5Mjk5NTM5OH0.hIe-gbqhcJ_H0VHPbqxNhYPNMPLfy86ggky-mUqjQ1c"
+async function postDealToSupabase(row) {
+  try {
+    await fetch(SUPA_URL + "/rest/v1/buyer_deals", {
+      method: "POST",
+      headers: {
+        "apikey": SUPA_KEY,
+        "Authorization": "Bearer " + SUPA_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(row)
+    })
+  } catch(e) { console.error("Supabase error:", e) }
+}
+// ─────────────────────────────────────────────────────────────
+
 function useWidth() {
   const [w, setW] = useState(window.innerWidth)
   useEffect(() => {
@@ -374,7 +394,24 @@ function OfferForm({l,user,onSubmit,existingOffer}) {
           onFocus={e=>{e.target.style.borderColor=C.saffron;e.target.style.background=C.saffronBg}}
           onBlur={e=>{e.target.style.borderColor=C.cream2;e.target.style.background=C.cream}}/>
       </div>
-      <button onClick={()=>{onSubmit({...form,listingId:l.id,listingName:l.name,ts:new Date().toISOString()});setDone(true)}}
+      <button onClick={()=>{onSubmit({...form,listingId:l.id,listingName:l.name,ts:new Date().toISOString()});setDone(true);
+      postDealToSupabase({
+        portal:"DukaanApna",
+        listing_name:l.name,
+        listing_type:l.type,
+        buyer_name:user?.name||"",
+        buyer_email:user?.email||"",
+        buyer_phone:user?.phone||"",
+        buyer_entity:user?.company||"",
+        offer_price:form.offerPrice?Number(String(form.offerPrice).replace(/[^0-9.]/g,"")):null,
+        financing:form.financing,
+        structure:"Asset Purchase",
+        dd_period:form.closingTimeline,
+        conditions:form.contingencies,
+        thesis:form.message,
+        broker_fee:form.offerPrice?Math.round(Number(String(form.offerPrice).replace(/[^0-9.]/g,""))*0.05):null,
+        status:"New"
+      })}}
         style={{width:"100%",background:C.saffron,color:"#fff",border:"none",borderRadius:10,padding:"14px",fontSize:15,fontWeight:700,cursor:"pointer"}}
         onMouseEnter={e=>e.target.style.background=C.saffronDk}
         onMouseLeave={e=>e.target.style.background=C.saffron}>
